@@ -1,6 +1,6 @@
 # Common User-Settable Flags
 # --------------------------
-REGISTRY?=gcr.io/k8s-staging-metrics-server
+REGISTRY?=harbor.ctyuncdn.cn/ecf-edge-dev/coreos
 ARCH?=amd64
 OS?=linux
 BINARY_NAME?=metrics-server-$(OS)-$(ARCH)
@@ -44,7 +44,7 @@ all: metrics-server
 # -----------
 
 SRC_DEPS=$(shell find pkg cmd -type f -name "*.go") go.mod go.sum
-CHECKSUM=$(shell md5sum $(SRC_DEPS) | md5sum | awk '{print $$1}')
+CHECKSUM?=0.4.0
 PKG:=k8s.io/client-go/pkg
 VERSION_LDFLAGS:=-X $(PKG)/version.gitVersion=$(GIT_TAG) -X $(PKG)/version.gitCommit=$(GIT_COMMIT) -X $(PKG)/version.buildDate=$(BUILD_DATE)
 LDFLAGS:=-w $(VERSION_LDFLAGS)
@@ -89,8 +89,8 @@ PUSH_ARCH_TARGETS=$(addprefix push-,$(ALL_ARCHITECTURES))
 
 .PHONY: push
 push: container
-	docker tag $(REGISTRY)/metrics-server-$(ARCH):$(CHECKSUM) $(REGISTRY)/metrics-server-$(ARCH):$(GIT_TAG)
-	docker push $(REGISTRY)/metrics-server-$(ARCH):$(GIT_TAG)
+	docker tag $(REGISTRY)/metrics-server-$(ARCH):$(CHECKSUM) $(REGISTRY)/metrics-server-$(ARCH):$(CHECKSUM)
+	docker push $(REGISTRY)/metrics-server-$(ARCH):$(CHECKSUM)
 
 .PHONY: push-all
 push-all: $(PUSH_ARCH_TARGETS) push-multi-arch;
@@ -101,12 +101,13 @@ $(PUSH_ARCH_TARGETS): push-%:
 
 .PHONY: push-multi-arch
 push-multi-arch:
-	docker manifest create --amend $(REGISTRY)/metrics-server:$(GIT_TAG) $(shell echo $(ALL_ARCHITECTURES) | sed -e "s~[^ ]*~$(REGISTRY)/metrics-server\-&:$(GIT_TAG)~g")
-	@for arch in $(ALL_ARCHITECTURES); do docker manifest annotate --arch $${arch} $(REGISTRY)/metrics-server:$(GIT_TAG) $(REGISTRY)/metrics-server-$${arch}:${GIT_TAG}; done
-	docker manifest push --purge $(REGISTRY)/metrics-server:$(GIT_TAG)
+	docker manifest create --amend $(REGISTRY)/metrics-server:$(CHECKSUM) $(shell echo $(ALL_ARCHITECTURES) | sed -e "s~[^ ]*~$(REGISTRY)/metrics-server\-&:$(CHECKSUM)~g")
+	@for arch in $(ALL_ARCHITECTURES); do docker manifest annotate --arch $${arch} $(REGISTRY)/metrics-server:$(CHECKSUM) $(REGISTRY)/metrics-server-$${arch}:${CHECKSUM}; done
+	docker manifest push --purge $(REGISTRY)/metrics-server:$(CHECKSUM)
 
 # Release rules
 # -------------
+package: container-all push-all
 
 .PHONY: release-tag
 release-tag:
