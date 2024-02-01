@@ -44,7 +44,7 @@ all: metrics-server
 # -----------
 
 SRC_DEPS=$(shell find pkg cmd -type f -name "*.go") go.mod go.sum
-CHECKSUM?=0.4.1
+CHECKSUM?=0.4.2
 PKG:=k8s.io/client-go/pkg
 VERSION_LDFLAGS:=-X $(PKG)/version.gitVersion=$(GIT_TAG) -X $(PKG)/version.gitCommit=$(GIT_COMMIT) -X $(PKG)/version.buildDate=$(BUILD_DATE)
 LDFLAGS:=-w $(VERSION_LDFLAGS)
